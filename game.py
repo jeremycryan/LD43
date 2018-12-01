@@ -15,13 +15,17 @@ class Game():
 
     def __init__(self):
         pygame.init()
-        self.screen_commit = pygame.display.set_mode((1600, 900))
-        self.screen = pygame.Surface((1600, 900))
+        self.screen_commit = pygame.display.set_mode(WINDOW_SIZE)
+        self.screen = pygame.Surface(MAX_FRAME_SIZE)
 
         self.cam = Camera(self.screen_commit)
         self.cam.set_pan_pid(6, 2, -0.2)
 
-        self.levels = [Level("level_4.txt")]
+        self.levels = [Level("level_1.txt"),
+            # Level("level_2.txt"),
+            # Level("level_3.txt"),
+            # Level("level_4.txt"),
+            Level("level_5.txt")]
 
         self.main()
 
@@ -53,11 +57,11 @@ class Game():
 
         self.shrines = []
         self.doors = []
-        if self.cur_level.shrine_count > 0:
+        if self.cur_level.shrine_count() > 0:
             self.shrine_0 = Shrine(self.cur_level.shrine_0_pos(), num=0)
             self.door_0 = Door(self.cur_level.door_0_pos(), self.shrine_0)
-        self.shrines.append(self.shrine_0)
-        self.doors.append(self.door_0)
+            self.shrines.append(self.shrine_0)
+            self.doors.append(self.door_0)
 
         while True:
 
@@ -68,11 +72,15 @@ class Game():
 
             self.test_keydowns()
 
+            self.screen.fill((0, 0, 0))
+
             level_obj.draw_level(self.screen)
             for block in self.blocks:
                 block.draw(self.screen)
-            self.shrine_0.draw(self.screen)
-            self.door_0.draw(self.screen)
+            for shrine in self.shrines:
+                shrine.draw(self.screen)
+            for door in self.doors:
+                door.draw(self.screen)
             self.goal.draw(self.screen)
             self.player.draw(self.screen)
             self.cam.capture(self.screen)
@@ -84,14 +92,18 @@ class Game():
 
             pygame.display.flip()
 
-    def can_move_here(self, pos, block=False):
+            if self.player_hit_goal(level_obj):
+                break
+
+
+    def can_move_here(self, pos, block=False, prev_pos = (0, 0), hop = False):
 
         if self.unpassable_door_here(pos):
             return False
 
         block_poses = [item.pos for item in self.blocks]
 
-        if self.cur_level.can_move_here(pos, block):
+        if self.cur_level.can_move_here(pos, block=block, prev_pos = prev_pos, hop=hop):
             if pos not in block_poses:
                 return True
 
@@ -129,9 +141,14 @@ class Game():
 
                 if not self.unpassable_door_here(self.player.move_target(item, force_1 = True)):
                     if not self.block_here(self.player.move_target(item, force_1=True)):
-                        if self.can_move_here(self.player.move_target(item)):
+                        if self.can_move_here(self.player.move_target(item),
+                            prev_pos = self.player.pos,
+                            hop=self.player.jump_mode):
                             self.player.move(item)
-                        elif self.can_move_here(self.player.move_target(item, force_1=True)):
+
+                        elif self.can_move_here(self.player.move_target(item, force_1=True),
+                            prev_pos = self.player.pos,
+                            hop=self.player.jump_mode):
                             self.player.move(item, force_1=True)
 
                     elif self.player.push_mode:
@@ -168,6 +185,10 @@ class Game():
         cam_y = self.player.pos[1]*TILE_WIDTH
         self.cam.set_target_center((cam_x, cam_y))
 
+    def player_hit_goal(self, level_obj):
+        if self.player.pos == level_obj.goal_pos():
+            return True
+
 
     def draw_tools(self, surf):
         enabled = self.player.control_enables
@@ -183,6 +204,12 @@ class Game():
 
         if not clicked and len(self.selected_key):
             if len(self.hovered_shrine):
+                cap_key = self.hovered_shrine[0].captured_key
+                if len(cap_key):
+                    cap_key[0].x, cap_key[0].y = (cap_key[0].x - self.cam.pos[0] + WINDOW_WIDTH/2 - HUD_KEY_WIDTH,
+                        cap_key[0].y - self.cam.pos[1] + WINDOW_WIDTH/2 - HUD_KEY_HEIGHT)
+                    self.hud_key_array.hud_keys.append(cap_key[0])
+                self.selected_key[0].scale = 0.8
                 self.hovered_shrine[0].captured_key = [self.selected_key.pop()]
             else:
                 self.hud_key_array.return_key(self.selected_key[0])

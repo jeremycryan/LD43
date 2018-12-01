@@ -13,7 +13,7 @@ class Level(object):
         self.map = [[item for item in line[:-1]] for line in self.map]
 
         self.width = len(self.map[0])
-        self.height = len(self.map[1])
+        self.height = len(self.map)
         self.surf_width = self.width * TILE_WIDTH
         self.surf_height = self.height * TILE_WIDTH
         self.surf_half = [self.surf_width/2, self.surf_height/2]
@@ -68,7 +68,8 @@ class Level(object):
             pygame.draw.rect(surf, (40, 40, 40), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
         elif tile_key == WALL:
             pygame.draw.rect(surf, (70, 140, 70), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
-
+        elif tile_key == ELEVATED:
+            pygame.draw.rect(surf, (160, 150, 80), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
         else:
             print(tile_key)
 
@@ -82,11 +83,18 @@ class Level(object):
 
                 self.draw_tile(tile, (x_pos, y_pos), surf)
 
-    def can_move_here(self, pos, block=False):
+    def can_move_here(self, pos, block=False, prev_pos = (0, 0), hop = False):
+        prev = self.map[prev_pos[1]][prev_pos[0]]
         target = self.map[pos[1]][pos[0]]
+        dist = abs(prev_pos[0] - pos[0]) + abs(prev_pos[1] - pos[1])
+
         if target in [PLAYER, FLOOR, GOAL, BLOCK] + DOORS:
             return True
         elif block and target == PIT:
+            return True
+        elif prev == ELEVATED and target == ELEVATED:
+            return True
+        elif target == ELEVATED and dist <= 1 and hop:
             return True
         else:
             return False
