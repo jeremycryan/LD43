@@ -3,6 +3,9 @@ import numpy as np
 import pygame
 from constants import *
 
+def fp(path):
+    return "assets/"+path
+
 class Level(object):
 
 
@@ -18,6 +21,23 @@ class Level(object):
         self.surf_height = self.height * TILE_WIDTH
         self.surf_half = [self.surf_width/2, self.surf_height/2]
 
+        self.generate_surfaces()
+
+    def generate_surfaces(self):
+        self.floor_tile = pygame.image.load(fp("floor.png"))
+        self.floor_tile = pygame.transform.scale(self.floor_tile,
+            (TILE_WIDTH,
+            TILE_WIDTH * self.floor_tile.get_height()/self.floor_tile.get_width()))
+
+        self.elev_tile = pygame.image.load(fp("elevated.png"))
+        self.elev_tile = pygame.transform.scale(self.elev_tile,
+            (TILE_WIDTH,
+            TILE_WIDTH * self.elev_tile.get_height()/self.elev_tile.get_width()))
+
+        self.wall_tile = pygame.image.load(fp("wall.png"))
+        self.wall_tile = pygame.transform.scale(self.wall_tile,
+            (TILE_WIDTH,
+            TILE_WIDTH * self.wall_tile.get_height()/self.wall_tile.get_width()))
 
     def player_start_pos(self):
         for (y, row) in enumerate(self.map):
@@ -63,13 +83,17 @@ class Level(object):
     def draw_tile(self, tile_key, position, surf):
 
         if tile_key in [FLOOR, PLAYER, BLOCK, GOAL] or tile_key in SHRINES or tile_key in DOORS:
-            pygame.draw.rect(surf, (180, 170, 90), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            #pygame.draw.rect(surf, (180, 170, 90), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            surf.blit(self.floor_tile, (position[0], position[1]-TILE_WIDTH))
         elif tile_key == PIT:
-            pygame.draw.rect(surf, (40, 40, 40), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            pass
+            #pygame.draw.rect(surf, (40, 40, 40), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
         elif tile_key == WALL:
-            pygame.draw.rect(surf, (70, 140, 70), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            #pygame.draw.rect(surf, (70, 140, 70), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            surf.blit(self.wall_tile, (position[0], position[1]-TILE_WIDTH))
         elif tile_key == ELEVATED:
-            pygame.draw.rect(surf, (160, 150, 80), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            #pygame.draw.rect(surf, (160, 150, 80), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
+            surf.blit(self.elev_tile, (position[0], position[1]-TILE_WIDTH))
         else:
             print(tile_key)
 
@@ -113,6 +137,19 @@ class Level(object):
         else:
             return False
 
+    def check_adjacency(self, key_0, key_1):
+        pos_0 = (0, 0)
+        pos_1 = (-100, -100)
+        for (y, row) in enumerate(self.map):
+            for (x, key) in enumerate(row):
+                if key == key_0:
+                    pos_0 = (x, y)
+                if key == key_1:
+                    pos_1 = (x, y)
+
+        dist = int(pos_0[0] - pos_1[0]) + int(pos_0[1] - pos_1[0])
+        if dist <= 1:
+            return True
 
 
 if __name__ == '__main__':

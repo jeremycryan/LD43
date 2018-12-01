@@ -22,9 +22,9 @@ class Game():
         self.cam.set_pan_pid(6, 2, -0.2)
 
         self.levels = [Level("level_1.txt"),
-            # Level("level_2.txt"),
-            # Level("level_3.txt"),
-            # Level("level_4.txt"),
+            Level("level_2.txt"),
+            Level("level_3.txt"),
+            Level("level_4.txt"),
             Level("level_5.txt")]
 
         self.main()
@@ -113,7 +113,6 @@ class Game():
         return False
 
     def unpassable_door_here(self, pos):
-
         for item in self.doors:
             if item.pos == pos:
                 if not item.is_passable():
@@ -197,20 +196,28 @@ class Game():
         if len(self.selected_key):
             self.selected_key[0].draw(surf)
 
+    def check_adjacency_to_shrine(self, shrine):
+        dist = abs(shrine.pos[0] - self.player.pos[0]) + abs(shrine.pos[1] - self.player.pos[1])
+        if dist <= 1:
+            return True
+        else:
+            return False
+
     def mouse_triggers(self):
-
-
         clicked = pygame.mouse.get_pressed()[0]
 
         if not clicked and len(self.selected_key):
             if len(self.hovered_shrine):
-                cap_key = self.hovered_shrine[0].captured_key
-                if len(cap_key):
-                    cap_key[0].x, cap_key[0].y = (cap_key[0].x - self.cam.pos[0] + WINDOW_WIDTH/2 - HUD_KEY_WIDTH,
-                        cap_key[0].y - self.cam.pos[1] + WINDOW_WIDTH/2 - HUD_KEY_HEIGHT)
-                    self.hud_key_array.hud_keys.append(cap_key[0])
-                self.selected_key[0].scale = 0.8
-                self.hovered_shrine[0].captured_key = [self.selected_key.pop()]
+                if self.check_adjacency_to_shrine(self.hovered_shrine[0]):
+                    cap_key = self.hovered_shrine[0].captured_key
+                    if len(cap_key):
+                        cap_key[0].x, cap_key[0].y = (cap_key[0].x - self.cam.pos[0] + WINDOW_WIDTH/2 - HUD_KEY_WIDTH,
+                            cap_key[0].y - self.cam.pos[1] + WINDOW_WIDTH/2 - HUD_KEY_HEIGHT)
+                        self.hud_key_array.hud_keys.append(cap_key[0])
+                    self.selected_key[0].scale = 0.8
+                    self.hovered_shrine[0].captured_key = [self.selected_key.pop()]
+                else:
+                    self.hud_key_array.return_key(self.selected_key[0])
             else:
                 self.hud_key_array.return_key(self.selected_key[0])
             self.selected_key = []

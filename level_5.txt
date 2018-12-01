@@ -1,6 +1,7 @@
 ...........
 .WWWWWWWWW.
-.W,,EEEE,W.
+.W,,EEEEEW.
+.W,,,EEE,W.
 .W,WWWWWGW.
 .W,W...WWW.
 .W,W.......

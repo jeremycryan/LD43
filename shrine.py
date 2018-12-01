@@ -8,6 +8,8 @@ class Shrine(object):
     def __init__(self, pos, num=0):
         self.pos = pos
 
+        self.num = num
+
         self.width = TILE_WIDTH
         self.height = TILE_WIDTH
 

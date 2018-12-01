@@ -1,5 +1,6 @@
 ##!/usr/bin/env python
 
+from level import fp
 from constants import *
 
 class HudKey(object):
@@ -7,6 +8,17 @@ class HudKey(object):
     def __init__(self, key):
 
         self.key = key
+
+        path_dict = {UP: "up.png",
+            DOWN: "down.png",
+            LEFT: "left.png",
+            RIGHT: "right.png",
+            JUMP: "c.png",
+            DASH: "z.png",
+            PUSH: "x.png"}
+        self.surf = pygame.image.load(fp(path_dict[key]))
+        surf_aspect = self.surf.get_height()*1.0/self.surf.get_width()
+        self.surf = pygame.transform.scale(self.surf, (HUD_KEY_WIDTH, HUD_KEY_HEIGHT))
 
         self.y = HUD_KEY_Y
         if key == UP:
@@ -35,11 +47,16 @@ class HudKey(object):
         scale_diff_half = scale_diff/2
         scale_offset_y = scale_diff_half * HUD_KEY_HEIGHT
         scale_offset_x = scale_diff_half * HUD_KEY_WIDTH
-        pygame.draw.rect(surf, color,
-            (self.x - scale_offset_x,
-            self.y - scale_offset_y,
-            self.width,
-            self.height))
+        # pygame.draw.rect(surf, color,
+        #     (self.x - scale_offset_x,
+        #     self.y - scale_offset_y,
+        #     self.width,
+        #     self.height))
+        surf_blit = pygame.transform.scale(self.surf,
+            (int(self.width),
+            int(self.height)))
+        surf.blit(surf_blit, (self.x - scale_offset_x,
+            self.y-scale_offset_y))
 
 
     def update(self, dt):
@@ -68,7 +85,7 @@ class HudKey(object):
         if mx >= self.x and mx <= self.x + HUD_KEY_WIDTH:
             if my >= self.y and my <= self.y + HUD_KEY_HEIGHT:
                 self.hover = True
-                self.target_scale = 1.2
+                self.target_scale = 1.4
                 return True
         self.target_scale = 1.0
         self.hover = False
@@ -88,6 +105,16 @@ class HudKeyArray(object):
             self.hud_keys.append(HudKey(item))
         self.full_list = self.hud_keys
 
+        self.set_xs()
+        self.set_ys()
+
+        for item in self.hud_keys:
+            item.x = item.target_x
+            item.y = item.target_y
+
+        self.hud_surfs = [item.surf for item in self.hud_keys]
+        self.hud_surf_poses = [(item.x, item.y) for item in self.hud_keys]
+
     def set_xs(self):
 
         priorities = [HUD_KEY_ORDER[key] for key in self.keys]
@@ -100,7 +127,7 @@ class HudKeyArray(object):
             xcum = 0
             for item in self.hud_keys:
                 if item.key == key:
-                    item.target_x = x_index * (HUD_KEY_X_SPACING + HUD_KEY_WIDTH) + HUD_KEY_X
+                    item.target_x = priority * (HUD_KEY_X_SPACING + HUD_KEY_WIDTH) + HUD_KEY_X
 
     def set_ys(self):
 
@@ -108,6 +135,27 @@ class HudKeyArray(object):
             item.target_y = item.start_y
 
     def draw(self, surf):
+
+        hud_r_rect = pygame.Surface(HUD_R_RECT[2:])
+        hud_r_rect.fill((0, 0, 0))
+        #hud_r_rect = hud_r_rect.convert_alpha()
+        hud_r_rect.set_alpha(100)
+        hud_l_rect = pygame.Surface(HUD_L_RECT[2:])
+        hud_l_rect.fill((0, 0, 0))
+        #hud_l_rect = hud_l_rect.convert_alpha()
+        hud_l_rect.set_alpha(100)
+
+        surf.blit(hud_r_rect, HUD_R_RECT[:2])
+        surf.blit(hud_l_rect, HUD_L_RECT[:2])
+
+        for i, item in enumerate(self.hud_surfs):
+            a = pygame.Surface((item.get_width(),
+                item.get_height()))
+            a.fill((0, 0, 0))
+            a.blit(item, (0, 0))
+            a.set_alpha(120)
+            surf.blit(a, (self.hud_surf_poses[i]))
+
         for key in self.hud_keys:
             key.draw(surf)
 
