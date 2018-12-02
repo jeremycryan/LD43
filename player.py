@@ -1,7 +1,11 @@
 ##!/usr/bin/env python
 
 import pygame
+import time
+import math
 from constants import *
+from sprite_tools import *
+from level import fp
 
 
 class Player(object):
@@ -14,6 +18,40 @@ class Player(object):
         self.dash_mode = 0
         self.jump_mode = 0
         self.push_mode = 0
+
+        idle_sprite = SpriteSheet(fp("keith.png"), (1, 1), 1)
+        self.sprite = Sprite(8)
+        self.sprite.scale = TILE_WIDTH*1.0/48
+        self.sprite.add_animation({"idle": idle_sprite})
+        self.sprite.start_animation("idle")
+
+        self.sprite.x_pos = position[0] * TILE_WIDTH
+        self.sprite.y_pos = position[1] * TILE_WIDTH - TILE_WIDTH
+
+        self.hop_amp = TILE_WIDTH*1.0*.7
+        self.hop_height = 0
+        self.hop_enable = 0
+        self.hop_time = 0
+        self.hop_duration = 0.1
+
+    def hop(self):
+        self.hop_enable = 1
+        self.hop_height = 0.001
+        self.hop_time = 0
+
+    def update_hop(self, dt):
+        hop_rate = 12
+        if self.hop_height <= 0:
+            self.hop_enable = 0
+            self.hop_height = 0
+        elif self.hop_enable:
+            self.hop_time += dt
+            self.hop_height = self.hop_func(self.hop_time/self.hop_duration)
+
+    def hop_func(self, prop_thru):
+        atk = 15.0
+        dec = 2.0
+        return min((prop_thru*atk)**0.2, (1-prop_thru)*dec) * self.hop_amp
 
     def generate_control_enables(self):
         self.control_enables = {}
@@ -91,11 +129,34 @@ class Player(object):
                         pressed.append(CONTROLS[key])
         return pressed
 
+    def update(self, dt):
+        self.update_sprite_position(dt)
+        self.update_hop(dt)
+        self.sprite.update(dt)
+
+    def update_sprite_position(self, dt):
+        dx = self.pos[0] * TILE_WIDTH - self.sprite.x_pos
+        dy = self.pos[1] * TILE_WIDTH - self.sprite.y_pos - TILE_WIDTH - self.hop_height
+
+        if dx+dy> TILE_WIDTH * 3:
+            print("HERHERHERHE")
+            self.sprite.x_pos = self.pos[0] * TILE_WIDTH
+            self.sprite.y_pos = self.pos[1] * TILE_WIDTH
+            return
+
+        rate = 16
+        self.sprite.x_pos += dx*rate*dt
+        self.sprite.y_pos += dy*rate*dt
+
+
     def draw(self, surf):
         x = self.pos[0] * TILE_WIDTH
-        y = self.pos[1] * TILE_WIDTH
+        y = self.pos[1] * TILE_WIDTH - self.hop_height
 
-        pygame.draw.rect(surf, (255, 255, 255),
-            (x +TILE_WIDTH/8,
-            y +TILE_WIDTH/8,
-            TILE_WIDTH*3/4, TILE_WIDTH*3/4))
+        # pygame.draw.rect(surf, (255, 255, 255),
+        #     (x +TILE_WIDTH/8,
+        #     y +TILE_WIDTH/8,
+        #     TILE_WIDTH*3/4, TILE_WIDTH*3/4))
+
+        #self.sprite.set_position((x, y-TILE_WIDTH))
+        self.sprite.draw(surf)

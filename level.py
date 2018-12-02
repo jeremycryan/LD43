@@ -97,9 +97,11 @@ class Level(object):
         else:
             print(tile_key)
 
-    def draw_level(self, surf):
+    def draw_level(self, surf, y_range = (0, 9999)):
 
         for (y, row) in enumerate(self.map):
+            if y < y_range[0] or y > y_range[1]:
+                continue
             y_pos = y*TILE_WIDTH
 
             for (x, tile) in enumerate(row):

@@ -32,6 +32,8 @@ class SpriteSheet(object):
         self.load_image_file()
         self.split()
 
+        self.scale = 1.0
+
 
     def load_image_file(self):
         """ Reads the sprite sheet image file and computes dimensions """
@@ -208,6 +210,12 @@ class Sprite(object):
 
         #   Draw the animation on the surface
         frame_to_draw = active_spritesheet.get_frame(frames_count)
+
+        frame_to_draw = pygame.transform.scale(
+            frame_to_draw,
+            (int(frame_to_draw.get_width() * self.scale),
+            int(frame_to_draw.get_height() * self.scale)))
+
         surf.blit(frame_to_draw, (int(self.x_pos), int(self.y_pos)))
 
 

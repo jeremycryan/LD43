@@ -22,9 +22,9 @@ class Game():
         self.cam.set_pan_pid(6, 2, -0.2)
 
         self.levels = [Level("level_1.txt"),
-            Level("level_2.txt"),
-            Level("level_3.txt"),
-            Level("level_4.txt"),
+            # Level("level_2.txt"),
+            # Level("level_3.txt"),
+            # Level("level_4.txt"),
             Level("level_5.txt")]
 
         self.main()
@@ -37,6 +37,8 @@ class Game():
 
     def run_level(self, level_obj):
 
+        self.mrd = DOWN
+
         self.hud_key_array = HudKeyArray()
 
         self.clicked = 0
@@ -46,9 +48,11 @@ class Game():
         self.cur_level = level_obj
 
         then = time.time()
-        self.cam.set_target_center(level_obj.surf_half)
 
         self.player_pos = level_obj.player_start_pos()
+        self.cam.set_center((self.player_pos[0] * TILE_WIDTH,
+            self.player_pos[1] * TILE_WIDTH - TILE_WIDTH))
+
         self.player = Player(self.player_pos)
         self.goal = Goal(level_obj.goal_pos())
         self.blocks = []
@@ -63,6 +67,12 @@ class Game():
             self.shrines.append(self.shrine_0)
             self.doors.append(self.door_0)
 
+        shadow = pygame.Surface(WINDOW_SIZE)
+        shadow.fill((0, 0, 0))
+        shadow_opacity = 255.0
+        shadow_fade_rate = 255.0
+        shadow_dir = 1
+
         while True:
 
             now = time.time()
@@ -70,19 +80,18 @@ class Game():
             then = now
             dt = self.cam.time_step(dt)
 
-            self.test_keydowns()
+            if shadow_opacity < 80 and shadow_dir == 1:
+                self.test_keydowns()
+            else:
+                pygame.event.get()
 
             self.screen.fill((0, 0, 0))
 
-            level_obj.draw_level(self.screen)
-            for block in self.blocks:
-                block.draw(self.screen)
-            for shrine in self.shrines:
-                shrine.draw(self.screen)
-            for door in self.doors:
-                door.draw(self.screen)
-            self.goal.draw(self.screen)
-            self.player.draw(self.screen)
+            pypos = self.player.pos[1]
+
+            items_to_draw = self.blocks + self.shrines + self.doors + [self.player] + [self.goal]
+            self.draw_items(items_to_draw)
+
             self.cam.capture(self.screen)
 
             self.draw_tools(self.screen_commit)
@@ -90,10 +99,39 @@ class Game():
             self.update_objects(dt)
             self.mouse_triggers()
 
+            if shadow_opacity > 0 or shadow_dir == -1:
+                shadow_opacity = max(0, shadow_opacity - shadow_dir * shadow_fade_rate * dt)
+                shadow.set_alpha(shadow_opacity)
+                self.screen_commit.blit(shadow, (0, 0))
             pygame.display.flip()
 
             if self.player_hit_goal(level_obj):
+                shadow_dir = -1
+
+            if shadow_opacity > 255 and shadow_dir == -1:
                 break
+
+            print(int(1/dt))
+
+    def draw_items(self, items):
+        if self.mrd == UP:
+            self.player.pos = self.player.pos[0], self.player.pos[1] + 1
+        items.sort(key=lambda x: x.pos[1])
+        y = 0
+        while y <= self.cur_level.height:
+            self.cur_level.draw_level(self.screen, y_range = (y, y))
+            if not len(items):
+                y += 1
+                continue
+            while items[0].pos[1] == y:
+                items[0].draw(self.screen)
+                items = items[1:]
+                if items == []:
+                    break
+            y += 1
+        if self.mrd == UP:
+            self.player.pos = self.player.pos[0], self.player.pos[1] - 1
+
 
 
     def can_move_here(self, pos, block=False, prev_pos = (0, 0), hop = False):
@@ -144,11 +182,17 @@ class Game():
                             prev_pos = self.player.pos,
                             hop=self.player.jump_mode):
                             self.player.move(item)
+                            self.mrd = item
+                            if self.player.jump_mode:
+                                self.player.hop()
 
                         elif self.can_move_here(self.player.move_target(item, force_1=True),
                             prev_pos = self.player.pos,
                             hop=self.player.jump_mode):
                             self.player.move(item, force_1=True)
+                            self.mrd = item
+                            if self.player.jump_mode:
+                                self.player.hop()
 
                     elif self.player.push_mode:
                         for block in self.blocks:
@@ -156,6 +200,7 @@ class Game():
                                 if self.can_move_here(block.move_target(item), block=True):
                                     block.move(item)
                                     self.player.move(item)
+                                    self.mrd = item
 
             if item == DASH:
                 self.player.dash_mode = 1
@@ -179,6 +224,8 @@ class Game():
             self.selected_key[0].update(dt)
         for shrine in self.shrines:
             shrine.update(dt)
+
+        self.player.update(dt)
 
         cam_x = self.player.pos[0]*TILE_WIDTH
         cam_y = self.player.pos[1]*TILE_WIDTH
