@@ -9,6 +9,8 @@ class HudKey(object):
 
         self.key = key
 
+
+
         path_dict = {UP: "up.png",
             DOWN: "down.png",
             LEFT: "left.png",
@@ -59,6 +61,7 @@ class HudKey(object):
             self.y-scale_offset_y))
 
 
+
     def update(self, dt):
 
         rate = 8.0
@@ -98,6 +101,9 @@ class HudKey(object):
 class HudKeyArray(object):
 
     def __init__(self):
+
+        reset_font = pygame.font.SysFont("Myriad", 22)
+        self.reset_font_render = reset_font.render("Press R to reset level. Press H for a hint.", 1, (180, 180, 180))
 
         self.keys = [UP, DOWN, LEFT, RIGHT, JUMP, PUSH, DASH]
         self.hud_keys = []
@@ -158,6 +164,9 @@ class HudKeyArray(object):
 
         for key in self.hud_keys:
             key.draw(surf)
+
+        surf.blit(self.reset_font_render,
+            (38, WINDOW_HEIGHT - 32))
 
     def update(self, dt):
         self.set_xs()

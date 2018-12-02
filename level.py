@@ -27,17 +27,17 @@ class Level(object):
         self.floor_tile = pygame.image.load(fp("floor.png"))
         self.floor_tile = pygame.transform.scale(self.floor_tile,
             (TILE_WIDTH,
-            TILE_WIDTH * self.floor_tile.get_height()/self.floor_tile.get_width()))
+            int(TILE_WIDTH * self.floor_tile.get_height()/self.floor_tile.get_width())))
 
         self.elev_tile = pygame.image.load(fp("elevated.png"))
         self.elev_tile = pygame.transform.scale(self.elev_tile,
             (TILE_WIDTH,
-            TILE_WIDTH * self.elev_tile.get_height()/self.elev_tile.get_width()))
+            int(TILE_WIDTH * self.elev_tile.get_height()/self.elev_tile.get_width())))
 
         self.wall_tile = pygame.image.load(fp("wall.png"))
         self.wall_tile = pygame.transform.scale(self.wall_tile,
             (TILE_WIDTH,
-            TILE_WIDTH * self.wall_tile.get_height()/self.wall_tile.get_width()))
+            int(TILE_WIDTH * self.wall_tile.get_height()/self.wall_tile.get_width())))
 
     def player_start_pos(self):
         for (y, row) in enumerate(self.map):
@@ -85,7 +85,7 @@ class Level(object):
         if tile_key in [FLOOR, PLAYER, BLOCK, GOAL] or tile_key in SHRINES or tile_key in DOORS:
             #pygame.draw.rect(surf, (180, 170, 90), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
             surf.blit(self.floor_tile, (position[0], position[1]-TILE_WIDTH))
-        elif tile_key == PIT:
+        elif tile_key == PIT or tile_key == UNPASSABLE:
             pass
             #pygame.draw.rect(surf, (40, 40, 40), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
         elif tile_key == WALL:
@@ -95,7 +95,8 @@ class Level(object):
             #pygame.draw.rect(surf, (160, 150, 80), (position[0], position[1], TILE_WIDTH, TILE_WIDTH))
             surf.blit(self.elev_tile, (position[0], position[1]-TILE_WIDTH))
         else:
-            print(tile_key)
+            pass
+            #print(tile_key)
 
     def draw_level(self, surf, y_range = (0, 9999)):
 
@@ -108,6 +109,13 @@ class Level(object):
                 x_pos = x*TILE_WIDTH
 
                 self.draw_tile(tile, (x_pos, y_pos), surf)
+
+    def unpassable_here(self, pos):
+        target = self.map[pos[1]][pos[0]]
+        if target in [UNPASSABLE]:
+            return True
+        else:
+            return False
 
     def can_move_here(self, pos, block=False, prev_pos = (0, 0), hop = False):
         prev = self.map[prev_pos[1]][prev_pos[0]]
@@ -128,6 +136,13 @@ class Level(object):
     def block_here(self, pos):
         target = self.map[pos[1]][pos[0]]
         if target in [BLOCK]:
+            return True
+        else:
+            return False
+
+    def shrine_here(self, pos):
+        target = self.map[pos[1]][pos[0]]
+        if target in SHRINES:
             return True
         else:
             return False

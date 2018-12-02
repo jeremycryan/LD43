@@ -1,7 +1,8 @@
 ##!/usr/bin/env python
 import pygame
 import time
-from level import Level
+import sys
+from level import Level, fp
 from constants import *
 from camera_tools import Camera
 from player import Player
@@ -10,33 +11,139 @@ from block import Block
 from hud_key import *
 from shrine import *
 from door import *
+import math
 
 class Game():
 
     def __init__(self):
         pygame.init()
+        pygame.font.init()
         self.screen_commit = pygame.display.set_mode(WINDOW_SIZE)
         self.screen = pygame.Surface(MAX_FRAME_SIZE)
 
         self.cam = Camera(self.screen_commit)
         self.cam.set_pan_pid(6, 2, -0.2)
 
+        self.notice_frame = pygame.image.load(fp("notice.png"))
+
         self.levels = [Level("level_1.txt"),
-            # Level("level_2.txt"),
-            # Level("level_3.txt"),
-            # Level("level_4.txt"),
-            Level("level_5.txt")]
+            Level("level_2.txt"),
+            Level("level_3.txt"),
+            Level("level_3.5.txt"),
+            Level("level_4.txt"),
+            Level("level_5.txt"),
+            Level("level_6.txt"),
+            Level("level_7.txt"),
+            Level("level_8.txt")]
 
         self.main()
 
 
     def main(self):
-        for level in self.levels:
-            self.run_level(level)
+
+        self.level_counter = 0
+        while self.level_counter < len(self.levels):
+            self.run_level(self.levels[self.level_counter])
+            self.level_counter += 1
+
+    def set_starting_hud(self):
+        if self.level_counter == 0:
+            bad = []
+            for key in self.hud_key_array.hud_keys:
+                if key.key in [JUMP, DASH, PUSH]:
+                    bad.append(key)
+            for item in bad:
+                self.hud_key_array.hud_keys.remove(item)
+
+        elif self.level_counter == 1:
+            bad = []
+            for key in self.hud_key_array.hud_keys:
+                if key.key in [JUMP, PUSH]:
+                    bad.append(key)
+            for item in bad:
+                self.hud_key_array.hud_keys.remove(item)
+
+        elif self.level_counter == 2:
+            bad = []
+            for key in self.hud_key_array.hud_keys:
+                if key.key in [JUMP]:
+                    bad.append(key)
+            for item in bad:
+                self.hud_key_array.hud_keys.remove(item)
+
+
+#################################################333333
+
+    def tooltip(self, str):
+        self.press_enable = False
+        frame = self.notice_frame.copy().convert_alpha()
+        cur_state = self.screen_commit.copy()
+
+        myfont = pygame.font.SysFont("Myriad", 40)
+        tsplit = str.split("\n")
+        l = len(tsplit)
+        any_button = pygame.font.SysFont("Myriad", 24)
+        any_button_text = any_button.render("Press any button to continue.", 1, (0, 0, 0))
+
+        tool_shadow_alpha = 0
+        tool_shadow = pygame.Surface(WINDOW_SIZE)
+        tool_shadow.fill((0, 0, 0))
+        tool_shadow.set_alpha(tool_shadow_alpha)
+        tool_shadow_rate = 300
+        tool_shadow_max = 150
+        tool_shadow_multiplier = 1.0
+
+        for i2, i in enumerate(tsplit):
+            a = myfont.render(i, 1, (0, 0, 0))
+            frame.blit(a, (frame.get_width()/2 - a.get_width()/2, frame.get_height()/2 - a.get_height()/2 - a.get_height()*0.6*l + a.get_height()*1.2*i2))
+        frame.blit(any_button_text, (frame.get_width()/2 - any_button_text.get_width()/2, 250))
+
+        then = time.time()
+        pause_time = time.time()
+        paused = True
+        to_break = False
+
+        while not to_break:
+            now = time.time()
+            dt = now - then
+            then = now
+
+            tsm = tool_shadow_multiplier
+
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if time.time() - pause_time > 0.5:
+                        paused = False
+
+            tool_shadow_alpha = min(tool_shadow_max, int((time.time()-pause_time)*tool_shadow_rate))
+            print(tool_shadow_alpha * tool_shadow_multiplier)
+            tool_shadow.set_alpha(tool_shadow_alpha*tool_shadow_multiplier)
+
+            self.screen_commit.fill((0, 0, 0))
+            self.screen_commit.blit(cur_state, (0, 0))
+            self.screen_commit.blit(tool_shadow, (0, 0))
+            x = WINDOW_WIDTH/2 - self.notice_frame.get_width()/2
+            y = WINDOW_HEIGHT/2 - self.notice_frame.get_height()/2
+            self.screen_commit.blit(frame,(x, int(y*(3 * tsm-2) - 200*math.sin(2*math.pi*tsm))))
+            pygame.display.flip()
+
+            if paused == False:
+                tool_shadow_multiplier -= dt*3
+                if tool_shadow_multiplier < 0:
+                    to_break = True
+
+
+
+        pass
 
 
     def run_level(self, level_obj):
 
+        self.press_en = True
         self.mrd = DOWN
 
         self.hud_key_array = HudKeyArray()
@@ -47,7 +154,7 @@ class Game():
 
         self.cur_level = level_obj
 
-        then = time.time()
+        self.then = time.time()
 
         self.player_pos = level_obj.player_start_pos()
         self.cam.set_center((self.player_pos[0] * TILE_WIDTH,
@@ -58,6 +165,8 @@ class Game():
         self.blocks = []
         for item in level_obj.block_pos():
             self.blocks.append(Block(item))
+
+        self.set_starting_hud()
 
         self.shrines = []
         self.doors = []
@@ -71,16 +180,21 @@ class Game():
         shadow.fill((0, 0, 0))
         shadow_opacity = 255.0
         shadow_fade_rate = 255.0
-        shadow_dir = 1
+        self.shadow_dir = 1
+        self.level_start = time.time()
+        msg_not_said_yet = 1
 
         while True:
 
             now = time.time()
-            dt = now - then
-            then = now
+            dt = now - self.then
+            self.then = now
             dt = self.cam.time_step(dt)
 
-            if shadow_opacity < 80 and shadow_dir == 1:
+            if msg_not_said_yet and self.level_counter <= 5:
+                self.press_en = 0
+
+            if shadow_opacity < 80 and self.shadow_dir == 1:
                 self.test_keydowns()
             else:
                 pygame.event.get()
@@ -99,24 +213,47 @@ class Game():
             self.update_objects(dt)
             self.mouse_triggers()
 
-            if shadow_opacity > 0 or shadow_dir == -1:
-                shadow_opacity = max(0, shadow_opacity - shadow_dir * shadow_fade_rate * dt)
+            if shadow_opacity > 0 or self.shadow_dir == -1:
+                shadow_opacity = max(0, shadow_opacity - self.shadow_dir * shadow_fade_rate * dt)
                 shadow.set_alpha(shadow_opacity)
                 self.screen_commit.blit(shadow, (0, 0))
             pygame.display.flip()
 
             if self.player_hit_goal(level_obj):
-                shadow_dir = -1
+                self.shadow_dir = -1
 
-            if shadow_opacity > 255 and shadow_dir == -1:
+            if shadow_opacity > 255 and self.shadow_dir == -1:
                 break
 
-            print(int(1/dt))
+            level_to_msg = {0: "Welcome to Key Coon!\nUse the arrow keys to move.",
+                1: "Hold Z while moving to dash.",
+                2: "Hold X to push objects.",
+                3: "Hold C to hop up ledges.",
+                4: "Altars require you to\nsacrifice your controls!\n\nStand in front of the book, and\n drag a key onto it with the mouse.",
+                5: "You're on your own now.\n Good Luck!"}
+
+            self.level_to_hint = {0: "Move around with the arrow keys.",
+                1: "Hold Z while moving to dash.\nThis allows you to cross short gaps.",
+                2: "Hold X while moving to push.\nYou can push cubes into holes.",
+                3: "Hold C while moving to jump.\nThis lets you get up short platforms.",
+                4: "Try standing next to the book, and\n drag a key onto it with the mouse.",
+                5: "You can replace the key on an altar\nby dragging a different key onto it.",
+                6: "Don't forget you can sacrifice\nyour movement keys, too!",
+                7: "Don't forget you can sacrifice\nyour movement keys, too!",
+                8: ""}
+
+            if time.time() - self.level_start > 0.75 and msg_not_said_yet and self.level_counter in level_to_msg:
+                self.tooltip(level_to_msg[self.level_counter])
+                self.then = time.time()
+                msg_not_said_yet = 0
+                self.press_en = True
 
     def draw_items(self, items):
+        self.player.pos = self.player.pos[0], self.player.pos[1] + 0.001
         if self.mrd == UP:
-            self.player.pos = self.player.pos[0], self.player.pos[1] + 1
+            self.player.pos = self.player.pos[0], self.player.pos[1] + 1 + self.player.dash_mode
         items.sort(key=lambda x: x.pos[1])
+        self.player.pos = self.player.pos[0], int(self.player.pos[1])
         y = 0
         while y <= self.cur_level.height:
             self.cur_level.draw_level(self.screen, y_range = (y, y))
@@ -130,7 +267,7 @@ class Game():
                     break
             y += 1
         if self.mrd == UP:
-            self.player.pos = self.player.pos[0], self.player.pos[1] - 1
+            self.player.pos = self.player.pos[0], self.player.pos[1] - 1 - self.player.dash_mode
 
 
 
@@ -155,6 +292,11 @@ class Game():
             if item.pos == pos:
                 if not item.is_passable():
                     return True
+        if self.cur_level.unpassable_here(pos):
+            return True
+        if self.cur_level.shrine_here(pos):
+            return True
+        return False
 
 
     def block_here(self, pos):
@@ -169,9 +311,20 @@ class Game():
     def test_keydowns(self):
 
         events = pygame.event.get()
+
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        if not self.press_en:
+            return
+
         keydowns = self.player.get_keydowns(events)
         keyups = self.player.get_keyups(events)
         bad_keydowns = self.player.get_bad_keydowns(events)
+
+
 
         for item in keydowns:
             if item in [UP, DOWN, RIGHT, LEFT]:
@@ -197,10 +350,12 @@ class Game():
                     elif self.player.push_mode:
                         for block in self.blocks:
                             if block.pos == self.player.move_target(item):
-                                if self.can_move_here(block.move_target(item), block=True):
+                                target = block.move_target(item)
+                                if self.can_move_here((target), block=True):
                                     block.move(item)
                                     self.player.move(item)
                                     self.mrd = item
+                                # elif self.cur_level.
 
             if item == DASH:
                 self.player.dash_mode = 1
@@ -208,6 +363,15 @@ class Game():
                 self.player.jump_mode = 1
             if item == PUSH:
                 self.player.push_mode = 1
+
+            if item == RESET:
+                self.shadow_dir = -1
+                level_index = self.levels.index(self.cur_level)
+                self.level_counter -= 1
+
+            if item == HINT:
+                self.tooltip(self.level_to_hint[self.level_counter])
+                self.then = time.time()
 
         for item in keyups:
             if item == DASH:
@@ -224,6 +388,13 @@ class Game():
             self.selected_key[0].update(dt)
         for shrine in self.shrines:
             shrine.update(dt)
+        for door in self.doors:
+            door.update(dt)
+        for block in self.blocks:
+            block.update(dt)
+            if self.cur_level.pit_here(block.pos):
+                if block.fell == 0:
+                    block.fall()
 
         self.player.update(dt)
 

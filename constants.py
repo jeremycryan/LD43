@@ -15,6 +15,7 @@ PLAYER = "P"
 BLOCK = "B"
 GOAL = "G"
 ELEVATED = "E"
+UNPASSABLE = "U"
 
 SHRINES = ["S"]
 DOORS = ["1"]
@@ -26,6 +27,8 @@ UP = 3
 DASH = 4
 PUSH = 5
 JUMP = 6
+RESET = 7
+HINT = 8
 CONTROLS = {pygame.K_DOWN: DOWN,
     pygame.K_UP: UP,
     pygame.K_LEFT: LEFT,

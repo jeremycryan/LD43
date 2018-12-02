@@ -552,30 +552,7 @@ if __name__ == '__main__':
 
     #   DEFINE FIRE
     #   Define particle types
-    b = Particle(pos = (300, 100), path = "square", width = 12, height = 12,
-        color = (245, 80, 70))
-    c = Particle(pos = (300, 100), path = "square", width = 9, height = 9,
-        color = (245, 160, 60))
-    d = Particle(pos = (300, 100), path = "square", width = 7, height = 7,
-        color = (235, 210, 90))
-    e = Particle(pos = (300, 100), path = "square", width = 8, height = 8,
-        color = (255, 255, 255))
 
-    #   Add behaviors to particles
-    b.apply_behavior(OpacityEffect(decay = 0.5))
-    b.apply_behavior(LinearMotionEffect(direction = -0.25, init_speed = 60))
-    c.apply_behavior(OpacityEffect(decay = 0.6))
-    c.apply_behavior(LinearMotionEffect(direction = -0.25, init_speed = 80))
-    d.apply_behavior(OpacityEffect(decay = 0.7))
-    d.apply_behavior(LinearMotionEffect(direction = -0.25, init_speed = 100))
-    e.apply_behavior(OpacityEffect(decay = 1))
-
-    #   Define particle effect instance
-    fire = ParticleEffect(pos = (300, 150), width = 50, height = 60)
-    fire.add_particle_type(b, period = 0.03)
-    fire.add_particle_type(c, period = 0.025)
-    fire.add_particle_type(d, period = 0.015)
-    fire.add_particle_type(e, period = 0.01)
 
     #   DEFINE GRASS
     #   Define particle types

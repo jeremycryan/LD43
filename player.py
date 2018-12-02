@@ -19,16 +19,16 @@ class Player(object):
         self.jump_mode = 0
         self.push_mode = 0
 
-        idle_sprite = SpriteSheet(fp("keith.png"), (1, 1), 1)
-        self.sprite = Sprite(8)
+        idle_sprite = SpriteSheet(fp("keith.png"), (8, 1), 8)
+        self.sprite = Sprite(12)
         self.sprite.scale = TILE_WIDTH*1.0/48
-        self.sprite.add_animation({"idle": idle_sprite})
-        self.sprite.start_animation("idle")
+        self.sprite.add_animation({"right_idle": idle_sprite})
+        self.sprite.start_animation("right_idle")
 
         self.sprite.x_pos = position[0] * TILE_WIDTH
         self.sprite.y_pos = position[1] * TILE_WIDTH - TILE_WIDTH
 
-        self.hop_amp = TILE_WIDTH*1.0*.7
+        self.hop_amp = TILE_WIDTH*1.0*.5
         self.hop_height = 0
         self.hop_enable = 0
         self.hop_time = 0
@@ -41,17 +41,17 @@ class Player(object):
 
     def update_hop(self, dt):
         hop_rate = 12
+        if self.hop_enable:
+            self.hop_time += dt
+            self.hop_height = self.hop_func(self.hop_time/self.hop_duration)
         if self.hop_height <= 0:
             self.hop_enable = 0
             self.hop_height = 0
-        elif self.hop_enable:
-            self.hop_time += dt
-            self.hop_height = self.hop_func(self.hop_time/self.hop_duration)
 
     def hop_func(self, prop_thru):
-        atk = 15.0
+        atk = 12.0
         dec = 2.0
-        return min((prop_thru*atk)**0.2, (1-prop_thru)*dec) * self.hop_amp
+        return min((prop_thru*atk)**0.5, (1-prop_thru)*dec) * self.hop_amp
 
     def generate_control_enables(self):
         self.control_enables = {}
@@ -107,6 +107,11 @@ class Player(object):
                 if key in CONTROLS:
                     if self.control_enables[key]:
                         pressed.append(CONTROLS[key])
+
+                if key == pygame.K_r:
+                    pressed.append(RESET)
+                if key == pygame.K_h:
+                    pressed.append(HINT)
         return pressed
 
     def get_keyups(self, events):
@@ -139,15 +144,16 @@ class Player(object):
         dy = self.pos[1] * TILE_WIDTH - self.sprite.y_pos - TILE_WIDTH - self.hop_height
 
         if dx+dy> TILE_WIDTH * 3:
-            print("HERHERHERHE")
             self.sprite.x_pos = self.pos[0] * TILE_WIDTH
             self.sprite.y_pos = self.pos[1] * TILE_WIDTH
             return
 
-        rate = 16
-        self.sprite.x_pos += dx*rate*dt
-        self.sprite.y_pos += dy*rate*dt
-
+        rate = 14
+        ndx = dx*rate*dt
+        ndy = dy*rate*dt
+        max_speed = 1000
+        self.sprite.x_pos += max(min(ndx, dt*max_speed), dt*-max_speed)
+        self.sprite.y_pos += max(min(ndy, dt*max_speed), dt*-max_speed)
 
     def draw(self, surf):
         x = self.pos[0] * TILE_WIDTH
