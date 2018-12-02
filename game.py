@@ -120,7 +120,6 @@ class Game():
                         paused = False
 
             tool_shadow_alpha = min(tool_shadow_max, int((time.time()-pause_time)*tool_shadow_rate))
-            print(tool_shadow_alpha * tool_shadow_multiplier)
             tool_shadow.set_alpha(tool_shadow_alpha*tool_shadow_multiplier)
 
             self.screen_commit.fill((0, 0, 0))

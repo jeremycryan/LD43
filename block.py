@@ -19,7 +19,7 @@ class Block(object):
             "sink": self.sink_sheet,
             "sunk": self.sunk_sheet})
         self.sprite.start_animation("idle")
-        self.sprite.scale = TILE_WIDTH/48
+        self.sprite.scale = TILE_WIDTH*1.0/48
 
         self.fell = 0
 

@@ -17,7 +17,7 @@ class Door(object):
         self.active_sheet = SpriteSheet(fp("gate.png"), (2, 3), 6)
         self.inactive_sheet = SpriteSheet(fp("gate_inactive.png"), (2, 3), 6)
         self.sprite = Sprite(8)
-        self.sprite.scale = TILE_WIDTH/48
+        self.sprite.scale = TILE_WIDTH*1.0/48
         self.sprite.add_animation({"active": self.active_sheet,
             "inactive": self.inactive_sheet})
         self.sprite.start_animation("active")
